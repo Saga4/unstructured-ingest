@@ -64,7 +64,15 @@ class EmbedderConfig(BaseModel):
         )
 
     def get_openai_embedder(self, embedding_kwargs: dict) -> "BaseEmbeddingEncoder":
-        from unstructured_ingest.embed.openai import OpenAIEmbeddingConfig, OpenAIEmbeddingEncoder
+        if not hasattr(self, "_openai_imports"):
+            from unstructured_ingest.embed.openai import (
+                OpenAIEmbeddingConfig,
+                OpenAIEmbeddingEncoder,
+            )
+
+            self._openai_imports = (OpenAIEmbeddingConfig, OpenAIEmbeddingEncoder)
+        else:
+            OpenAIEmbeddingConfig, OpenAIEmbeddingEncoder = self._openai_imports
 
         return OpenAIEmbeddingEncoder(config=OpenAIEmbeddingConfig.model_validate(embedding_kwargs))
 
