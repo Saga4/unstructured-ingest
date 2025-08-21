@@ -198,10 +198,14 @@ class OnedriveIndexer(Indexer):
     def get_properties_sync(self, drive_item: "DriveItem") -> dict:
         properties = drive_item.properties
         filtered_properties = {}
+        dumps = json.dumps
         for k, v in properties.items():
             try:
-                json.dumps(v)
-                filtered_properties[k] = v
+                if isinstance(v, (str, int, float, bool)) or v is None:
+                    filtered_properties[k] = v
+                else:
+                    dumps(v)
+                    filtered_properties[k] = v
             except TypeError:
                 pass
         return filtered_properties
