@@ -106,7 +106,8 @@ class SQLIndexer(Indexer, ABC):
                 f"SELECT {self.index_config.id_column} FROM {self.index_config.table_name}"
             )
             results = cursor.fetchall()
-            ids = sorted([result[0] for result in results])
+            ids = [result[0] for result in results]
+            ids.sort()
             return ids
 
     def precheck(self) -> None:
