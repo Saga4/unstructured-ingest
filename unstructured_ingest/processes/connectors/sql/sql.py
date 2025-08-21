@@ -171,10 +171,7 @@ class SQLDownloader(Downloader, ABC):
     def sql_to_df(self, rows: list[tuple], columns: list[str]) -> list["DataFrame"]:
         import pandas as pd
 
-        data = [dict(zip(columns, row)) for row in rows]
-        df = pd.DataFrame(data)
-        dfs = [pd.DataFrame([row.values], columns=df.columns) for index, row in df.iterrows()]
-        return dfs
+        return [pd.DataFrame([dict(zip(columns, row))]) for row in rows]
 
     def get_data(self, file_data: SqlBatchFileData) -> list["DataFrame"]:
         rows, columns = self.query_db(file_data=file_data)
