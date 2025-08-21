@@ -5,6 +5,10 @@ from typing import TYPE_CHECKING, Any, Literal, Optional
 
 from pydantic import BaseModel, Field, SecretStr
 
+from unstructured_ingest.embed.huggingface import (
+    HuggingFaceEmbeddingConfig,
+    HuggingFaceEmbeddingEncoder,
+)
 from unstructured_ingest.interfaces.process import BaseProcess
 from unstructured_ingest.utils.data_prep import get_json_data
 
@@ -54,14 +58,10 @@ class EmbedderConfig(BaseModel):
     )
 
     def get_huggingface_embedder(self, embedding_kwargs: dict) -> "BaseEmbeddingEncoder":
-        from unstructured_ingest.embed.huggingface import (
-            HuggingFaceEmbeddingConfig,
-            HuggingFaceEmbeddingEncoder,
-        )
-
-        return HuggingFaceEmbeddingEncoder(
-            config=HuggingFaceEmbeddingConfig.model_validate(embedding_kwargs)
-        )
+        # Move the import to the global scope to avoid repeated import cost.
+        # Directly construct using validated config.
+        config = HuggingFaceEmbeddingConfig.model_validate(embedding_kwargs)
+        return HuggingFaceEmbeddingEncoder(config=config)
 
     def get_openai_embedder(self, embedding_kwargs: dict) -> "BaseEmbeddingEncoder":
         from unstructured_ingest.embed.openai import OpenAIEmbeddingConfig, OpenAIEmbeddingEncoder
