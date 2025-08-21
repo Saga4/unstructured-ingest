@@ -92,8 +92,20 @@ def get_astra_db(
     connection_config: AstraDBConnectionConfig,
     keyspace: str,
 ) -> "AstraDB":
+    if not hasattr(get_astra_db, "_db_cache"):
+        get_astra_db._db_cache = {}
+
     # Build the Astra DB object.
     access_configs = connection_config.access_config.get_secret_value()
+    cache_key = (
+        id(connection_config),
+        access_configs.api_endpoint,
+        access_configs.token,
+        keyspace,
+    )
+
+    if cache_key in get_astra_db._db_cache:
+        return get_astra_db._db_cache[cache_key]
 
     # Create a client object to interact with the Astra DB
     # caller_name/version for Astra DB tracking
@@ -105,6 +117,8 @@ def get_astra_db(
         token=access_configs.token,
         keyspace=keyspace,
     )
+
+    get_astra_db._db_cache[cache_key] = astra_db
     return astra_db
 
 
@@ -113,11 +127,19 @@ def get_astra_collection(
     collection_name: str,
     keyspace: str,
 ) -> "AstraDBCollection":
+    if not hasattr(get_astra_collection, "_collection_cache"):
+        get_astra_collection._collection_cache = {}
+
     astra_db = get_astra_db(connection_config=connection_config, keyspace=keyspace)
+    cache_key = (id(astra_db), collection_name)
+
+    if cache_key in get_astra_collection._collection_cache:
+        return get_astra_collection._collection_cache[cache_key]
 
     # astradb will return a collection object in all cases (even if it doesn't exist)
     astra_db_collection = astra_db.get_collection(name=collection_name)
 
+    get_astra_collection._collection_cache[cache_key] = astra_db_collection
     return astra_db_collection
 
 
