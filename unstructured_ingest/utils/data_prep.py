@@ -172,20 +172,26 @@ def write_data(path: Path, data: list[dict], indent: Optional[int] = 2) -> None:
 
 
 def get_json_data(path: Path) -> list[dict]:
-    with path.open() as f:
-        # Attempt by prefix
-        if path.suffix == ".json":
+    # Attempt by suffix: fast-path for common/expected cases
+    suffix = path.suffix
+    if suffix == ".json":
+        with path.open() as f:
             return json.load(f)
-        elif path.suffix == ".ndjson":
+    elif suffix == ".ndjson":
+        with path.open() as f:
             return ndjson.load(f)
-        try:
+
+    # Fallback: try both (must re-open for each read attempt)
+    try:
+        with path.open() as f:
             return json.load(f)
-        except Exception as e:
-            logger.warning(f"failed to read {path} as json: {e}")
-        try:
+    except Exception as e:
+        logger.warning(f"failed to read {path} as json: {e}")
+    try:
+        with path.open() as f:
             return ndjson.load(f)
-        except Exception as e:
-            logger.warning(f"failed to read {path} as ndjson: {e}")
+    except Exception as e:
+        logger.warning(f"failed to read {path} as ndjson: {e}")
     raise ValueError(f"Unsupported json file: {path}")
 
 

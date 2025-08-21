@@ -248,19 +248,17 @@ class SQLUploadStager(UploadStager):
         return data
 
     def conform_dataframe(self, df: "DataFrame") -> "DataFrame":
-        for column in filter(lambda x: x in df.columns, _DATE_COLUMNS):
-            df[column] = df[column].apply(parse_date_string).apply(lambda date: date.timestamp())
-        for column in filter(
-            lambda x: x in df.columns,
-            ("permissions_data", "record_locator", "points", "links"),
-        ):
+        # Fast path: only apply to columns that exist
+        date_columns = [col for col in _DATE_COLUMNS if col in df.columns]
+        for column in date_columns:
+            df[column] = df[column].apply(lambda v: parse_date_string(v).timestamp())
+        serialized_cols = ("permissions_data", "record_locator", "points", "links")
+        for column in [col for col in serialized_cols if col in df.columns]:
             df[column] = df[column].apply(
                 lambda x: json.dumps(x) if isinstance(x, (list, dict)) else None
             )
-        for column in filter(
-            lambda x: x in df.columns,
-            ("version", "page_number", "regex_metadata"),
-        ):
+        stringified_cols = ("version", "page_number", "regex_metadata")
+        for column in [col for col in stringified_cols if col in df.columns]:
             df[column] = df[column].apply(str)
         return df
 
