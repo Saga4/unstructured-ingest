@@ -18,7 +18,7 @@ class PartialUser(FromJSONMixin):
 
     @classmethod
     def from_dict(cls, data: dict):
-        return cls(id=data["id"])
+        return cls(data["id"])
 
 
 @dataclass
