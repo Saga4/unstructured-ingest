@@ -35,7 +35,7 @@ from unstructured_ingest.utils.dep_check import requires_dependencies
 CONNECTOR_TYPE = "s3"
 
 # https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-keys.html#object-key-guidelines-avoid-characters  # noqa
-CHARACTERS_TO_AVOID = ["\\", "{", "^", "}", "%", "`", "]", '"', ">", "[", "~", "<", "#", "|"]
+CHARACTERS_TO_AVOID = set(["\\", "{", "^", "}", "%", "`", "]", '"', ">", "[", "~", "<", "#", "|"])
 
 if TYPE_CHECKING:
     from s3fs import S3FileSystem
@@ -165,7 +165,9 @@ class S3Indexer(FsspecIndexer):
         return self.connection_config.wrap_error(e=e)
 
     def get_path(self, file_info: dict) -> str:
-        return file_info["Key"]
+        # Use local variable for key lookup for marginal speedup
+        key = file_info["Key"]
+        return key
 
     def get_metadata(self, file_info: dict) -> FileDataSourceMetadata:
         path = file_info["Key"]
