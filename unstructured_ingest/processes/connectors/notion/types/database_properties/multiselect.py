@@ -20,7 +20,12 @@ class MultiSelectOption(FromJSONMixin):
 
     @classmethod
     def from_dict(cls, data: dict):
-        return cls(**data)
+        # Explicit attribute access to avoid dataclass __init__ extra kwargs check
+        return cls(
+            color=data["color"],
+            id=data["id"],
+            name=data["name"],
+        )
 
 
 @dataclass
@@ -29,7 +34,11 @@ class MultiSelectProp(FromJSONMixin):
 
     @classmethod
     def from_dict(cls, data: dict):
-        return cls(options=[MultiSelectOption.from_dict(o) for o in data.get("options", [])])
+        options = data.get("options", [])
+        if not options:
+            return cls(options=[])
+        from_dict = MultiSelectOption.from_dict
+        return cls(options=[from_dict(o) for o in options])
 
 
 @dataclass
