@@ -11,10 +11,24 @@ from unstructured_ingest.utils.chunking import elements_from_base64_gzipped_json
 def parse_datetime(date_value: Union[int, str, float, datetime]) -> datetime:
     if isinstance(date_value, datetime):
         return date_value
-    elif isinstance(date_value, float):
+    elif isinstance(date_value, (int, float)):
+        if isinstance(date_value, int):
+            return datetime.fromtimestamp(date_value / 1000)
         return datetime.fromtimestamp(date_value)
-    elif isinstance(date_value, int):
-        return datetime.fromtimestamp(date_value / 1000)
+
+    if isinstance(date_value, str):
+        stripped = date_value.strip()
+        try:
+            timestamp = float(stripped)
+            return datetime.fromtimestamp(timestamp)
+        except ValueError:
+            pass
+        try:
+            if "T" in stripped or "-" in stripped:
+                return datetime.fromisoformat(stripped)
+        except ValueError:
+            pass
+        return parser.parse(stripped)
 
     try:
         timestamp = float(date_value)
