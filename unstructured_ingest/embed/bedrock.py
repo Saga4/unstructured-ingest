@@ -46,15 +46,11 @@ def conform_query(query: str, provider: str) -> dict:
     text = query.replace(os.linesep, " ")
 
     # format input body for provider
-    input_body = {}
     if provider == "cohere":
-        if "input_type" not in input_body:
-            input_body["input_type"] = "search_document"
-        input_body["texts"] = [text]
+        return {"input_type": "search_document", "texts": [text]}
     else:
         # includes common provider == "amazon"
-        input_body["inputText"] = text
-    return input_body
+        return {"inputText": text}
 
 
 class BedrockEmbeddingConfig(EmbeddingConfig):
