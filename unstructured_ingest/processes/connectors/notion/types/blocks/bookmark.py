@@ -8,6 +8,9 @@ from htmlBuilder.tags import A, Br, Div, HtmlTag
 from unstructured_ingest.processes.connectors.notion.interfaces import BlockBase
 from unstructured_ingest.processes.connectors.notion.types.rich_text import RichText
 
+# Move the False value to a module-level constant to avoid recreating it
+_BOOKMARK_CAN_HAVE_CHILDREN: bool = False
+
 
 @dataclass
 class Bookmark(BlockBase):
@@ -37,4 +40,5 @@ class Bookmark(BlockBase):
 
     @staticmethod
     def can_have_children() -> bool:
-        return False
+        # Use a class attribute to avoid recreating False on every call
+        return _BOOKMARK_CAN_HAVE_CHILDREN
