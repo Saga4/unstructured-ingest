@@ -413,14 +413,14 @@ def is_valid_uuid(uuid_str: str) -> bool:
     try:
         UUID(uuid_str)
         return True
-    except Exception:
+    except ValueError:
         return False
 
 
 def get_uuid_from_url(path: str) -> Optional[str]:
-    strings = path.split("-")
-    if len(strings) > 0 and is_valid_uuid(strings[-1]):
-        return strings[-1]
+    last_part = path.rsplit("-", 1)[-1]
+    if is_valid_uuid(last_part):
+        return last_part
     return None
 
 
