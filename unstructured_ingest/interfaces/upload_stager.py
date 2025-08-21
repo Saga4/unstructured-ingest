@@ -27,8 +27,8 @@ class UploadStager(BaseProcess, ABC):
 
     def get_output_path(self, output_filename: str, output_dir: Path) -> Path:
         output_path = Path(output_filename)
-        output_filename = f"{Path(output_filename).stem}{output_path.suffix}"
-        output_path = Path(output_dir) / Path(f"{output_filename}")
+        output_filename = f"{output_path.stem}{output_path.suffix}"
+        output_path = output_dir / output_filename
         output_path.parent.mkdir(parents=True, exist_ok=True)
         return output_path
 
@@ -40,11 +40,10 @@ class UploadStager(BaseProcess, ABC):
                 for element in reader:
                     conformed_element = self.conform_dict(element_dict=element, file_data=file_data)
                     writer.write(row=conformed_element)
-                    writer.f.flush()
+                writer.f.flush()
 
     def process_whole(self, input_file: Path, output_file: Path, file_data: FileData) -> None:
         elements_contents = get_json_data(path=input_file)
-
         conformed_elements = [
             self.conform_dict(element_dict=element, file_data=file_data)
             for element in elements_contents
