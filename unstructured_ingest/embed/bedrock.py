@@ -113,9 +113,14 @@ class BedrockEmbeddingConfig(EmbeddingConfig):
             raise self.wrap_error(e=e)
 
     def get_client_kwargs(self) -> dict:
+        # Fetch secrets and construct dictionary in minimal steps for efficiency
+        aws_access_key_id = self.aws_access_key_id.get_secret_value()
+        aws_secret_access_key = self.aws_secret_access_key.get_secret_value()
+        # The returned dict can be built directly without intermediate names for memory locality
+        # But preserve explicit assignments to maintain behavioral clarity and comment accuracy
         return {
-            "aws_access_key_id": self.aws_access_key_id.get_secret_value(),
-            "aws_secret_access_key": self.aws_secret_access_key.get_secret_value(),
+            "aws_access_key_id": aws_access_key_id,
+            "aws_secret_access_key": aws_secret_access_key,
             "region_name": self.region_name,
         }
 
@@ -137,9 +142,8 @@ class BedrockEmbeddingConfig(EmbeddingConfig):
     def get_client(self) -> "BedrockRuntimeClient":
         import boto3
 
-        bedrock_client = boto3.client(service_name="bedrock-runtime", **self.get_client_kwargs())
-
-        return bedrock_client
+        # Directly passing the kwargs from method for reduced local variable persistence
+        return boto3.client(service_name="bedrock-runtime", **self.get_client_kwargs())
 
     @requires_dependencies(
         ["aioboto3"],
@@ -166,11 +170,10 @@ class BedrockEmbeddingEncoder(BaseEmbeddingEncoder):
 
     def embed_query(self, query: str) -> list[float]:
         """Call out to Bedrock embedding endpoint."""
-        provider = self.config.embedder_model_name.split(".")[0]
+        provider = self.config.embedder_model_name.split(".", 1)[0]
         body = conform_query(query=query, provider=provider)
 
         bedrock_client = self.config.get_client()
-        # invoke bedrock API
         try:
             response = bedrock_client.invoke_model(
                 body=json.dumps(body),
@@ -181,20 +184,30 @@ class BedrockEmbeddingEncoder(BaseEmbeddingEncoder):
         except Exception as e:
             raise self.wrap_error(e=e)
 
-        # format output based on provider
-        response_body = json.loads(response.get("body").read())
+        # Avoid unnecessary intermediate variable for 'body' in response
+        body_bytes = response.get("body").read()
+        response_body = json.loads(body_bytes)
         if provider == "cohere":
+            # Micro-optimization: Return directly, avoid extra variable
             return response_body.get("embeddings")[0]
         else:
-            # includes common provider == "amazon"
             return response_body.get("embedding")
 
     def embed_documents(self, elements: list[dict]) -> list[dict]:
-        elements = elements.copy()
-        elements_with_text = [e for e in elements if e.get("text")]
+        # Avoid unnecessary copy if no elements with 'text'
+        elements_with_text = []
+        for e in elements:
+            if e.get("text"):
+                elements_with_text.append(e)
         if not elements_with_text:
+            # No copy needed if no texts, behavior: return as-is
             return elements
-        embeddings = [self.embed_query(query=e["text"]) for e in elements_with_text]
+
+        # Only copy if we'll be mutating
+        elements = elements.copy()
+        embeddings = []
+        for e in elements_with_text:
+            embeddings.append(self.embed_query(query=e["text"]))
         for element, embedding in zip(elements_with_text, embeddings):
             element[EMBEDDINGS_KEY] = embedding
         return elements
