@@ -69,8 +69,12 @@ class VectaraUploadStager(UploadStager):
             "element_id": "element_id",
         }
         md = flatten_dict(data, separator="-", flatten_lists=True)
-        md = {k.replace("metadata-", ""): v for k, v in md.items()}
-        md = {metadata_map[k]: v for k, v in md.items() if k in metadata_map}
+        # Combine key replacement and map selection into a single pass
+        md = {
+            metadata_map[k.replace("metadata-", "")]: v
+            for k, v in md.items()
+            if k.replace("metadata-", "") in metadata_map
+        }
         return md
 
     def process_whole(self, input_file: Path, output_file: Path, file_data: FileData) -> None:

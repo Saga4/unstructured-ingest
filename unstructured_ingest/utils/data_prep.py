@@ -79,6 +79,7 @@ def flatten_dict(
     """
     keys_to_omit = keys_to_omit if keys_to_omit else []
     flattened_dict: dict[str, Any] = {}
+    _flatten_dict = flatten_dict  # local fn ref to reduce attribute lookups
     for key, value in dictionary.items():
         new_key = f"{parent_key}{separator}{key}" if parent_key else key
         if new_key in keys_to_omit:
@@ -88,15 +89,16 @@ def flatten_dict(
         elif isinstance(value, dict):
             value = cast("dict[str, Any]", value)
             flattened_dict.update(
-                flatten_dict(
+                _flatten_dict(
                     value, new_key, separator, flatten_lists, remove_none, keys_to_omit=keys_to_omit
                 ),
             )
         elif isinstance(value, (list, tuple)) and flatten_lists:
             value = cast("list[Any] | tuple[Any]", value)
+            list_flattened = {}
             for index, item in enumerate(value):
-                flattened_dict.update(
-                    flatten_dict(
+                list_flattened.update(
+                    _flatten_dict(
                         {f"{new_key}{separator}{index}": item},
                         "",
                         separator,
@@ -105,6 +107,7 @@ def flatten_dict(
                         keys_to_omit=keys_to_omit,
                     )
                 )
+            flattened_dict.update(list_flattened)
         else:
             flattened_dict[new_key] = value
 
