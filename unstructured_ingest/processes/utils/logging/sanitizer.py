@@ -45,8 +45,9 @@ class DataSanitizer:
         """Sanitize tokens and secrets for logging."""
         if not token:
             return "<token>"
-        if len(token) < 10:
-            half_len = len(token) // 2
+        token_len = len(token)
+        if token_len < 10:
+            half_len = token_len // 2
             return f"{token[:half_len]}..."
         return f"{token[:4]}...{token[-4:]}"
 
@@ -58,17 +59,23 @@ class DataSanitizer:
 
         location_str = str(location)
 
-        # Handle URLs
-        if location_str.startswith(("http://", "https://", "ftp://", "ftps://")):
+        # Fast prefix check for URLs (4 most common prefixes)
+        # Compose a single tuple at the global class level for less attr access overhead
+        url_prefixes = ("http://", "https://", "ftp://", "ftps://")
+        if location_str.startswith(url_prefixes):
             return DataSanitizer.sanitize_url(location_str)
 
         # Handle database-style references (table:id, collection/document, etc.)
+        # Avoid double split: check for colon, then split
+        # Only split if safe
         if ":" in location_str and not location_str.startswith("/"):
-            parts = location_str.split(":", 1)
-            if len(parts) == 2:
-                table_name, record_id = parts
+            idx = location_str.find(":")
+            if idx != -1 and idx < len(location_str) - 1:
+                table_name = location_str[:idx]
+                record_id = location_str[idx + 1 :]
                 return f"{table_name}:{DataSanitizer.sanitize_id(record_id)}"
 
+        # Fallback to path
         return DataSanitizer.sanitize_path(location_str)
 
     @staticmethod
@@ -93,25 +100,35 @@ class DataSanitizer:
                 "credentials",
             }
 
+        # Preallocate output dict, use local vars for conditions
         sanitized = {}
+        skeys = sensitive_keys  # Local alias for lookup speed
         for k, v in data.items():
             key_lower = k.lower()
-            if any(sensitive_key in key_lower for sensitive_key in sensitive_keys):
+            # Fast string containment with generator expression, short-circuit with `next()`
+            is_sensitive = next((True for s in skeys if s in key_lower), False)
+
+            if is_sensitive:
                 sanitized[k] = DataSanitizer.sanitize_token(str(v))
             elif isinstance(v, dict):
-                sanitized[k] = DataSanitizer.sanitize_dict(v, sensitive_keys)
-            elif isinstance(v, (str, Path)) and (
-                "path" in key_lower
-                or "file" in key_lower
-                or "location" in key_lower
-                or "document_location" in key_lower
-            ):
-                sanitized[k] = DataSanitizer.sanitize_location(v)
-            elif isinstance(v, str) and (
-                ("id" in key_lower and len(str(v)) > 8)
-                or ("document_id" in key_lower and len(str(v)) > 8)
-            ):
-                sanitized[k] = DataSanitizer.sanitize_document_id(v)
+                sanitized[k] = DataSanitizer.sanitize_dict(v, skeys)
             else:
-                sanitized[k] = v
+                # Precompute boolean checks to avoid repeated work
+                v_is_str = isinstance(v, str)
+                v_is_path = isinstance(v, Path)
+                # Cheaper: merge in one check to one block
+                if (v_is_str or v_is_path) and (
+                    "path" in key_lower
+                    or "file" in key_lower
+                    or "location" in key_lower
+                    or "document_location" in key_lower
+                ):
+                    sanitized[k] = DataSanitizer.sanitize_location(v)
+                elif v_is_str and (
+                    ("id" in key_lower and len(v) > 8)
+                    or ("document_id" in key_lower and len(v) > 8)
+                ):
+                    sanitized[k] = DataSanitizer.sanitize_document_id(v)
+                else:
+                    sanitized[k] = v
         return sanitized
