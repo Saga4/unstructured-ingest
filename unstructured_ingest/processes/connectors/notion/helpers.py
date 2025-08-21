@@ -273,9 +273,11 @@ def get_recursive_content(
     child_pages: List[str] = []
     child_dbs: List[str] = []
     processed: List[str] = []
+    processed_set = set()
     while len(parents) > 0:
         parent: QueueEntry = parents.pop()
         processed.append(str(parent.id))
+        processed_set.add(str(parent.id))
         if parent.type == QueueEntryType.PAGE:
             logger.debug(f"getting child data from page: {parent.id}")
             page_children = []
@@ -308,7 +310,7 @@ def get_recursive_content(
                         ", ".join([block.title for block in child_page_blocks]),
                     ),
                 )
-            new_pages = [p.id for p in child_pages_from_page if p.id not in processed]
+            new_pages = [p.id for p in child_pages_from_page if p.id not in processed_set]
             new_pages = list(set(new_pages))
             child_pages.extend(new_pages)
             parents.extend(
@@ -331,7 +333,7 @@ def get_recursive_content(
                         ", ".join([block.title for block in child_db_blocks]),
                     ),
                 )
-            new_dbs = [db.id for db in child_dbs_from_page if db.id not in processed]
+            new_dbs = [db.id for db in child_dbs_from_page if db.id not in processed_set]
             new_dbs = list(set(new_dbs))
             child_dbs.extend(new_dbs)
             parents.extend(
@@ -343,12 +345,12 @@ def get_recursive_content(
             ]
             for link in linked_to_others:
                 if (page_id := link.page_id) and (
-                    page_id not in processed and page_id not in child_pages
+                    page_id not in processed_set and page_id not in child_pages
                 ):
                     child_pages.append(page_id)
                     parents.append(QueueEntry(type=QueueEntryType.PAGE, id=UUID(page_id)))
                 if (database_id := link.database_id) and (
-                    database_id not in processed and database_id not in child_dbs
+                    database_id not in processed_set and database_id not in child_dbs
                 ):
                     child_dbs.append(database_id)
                     parents.append(
@@ -371,9 +373,14 @@ def get_recursive_content(
             if not database_pages:
                 continue
 
-            child_pages_from_db = [
-                p for p in database_pages if is_page_url(client=client, url=p.url)
-            ]
+            # Cache URL check results to avoid duplicate API calls
+            url_cache = {}
+            child_pages_from_db = []
+            for p in database_pages:
+                if p.url not in url_cache:
+                    url_cache[p.url] = is_page_url(client=client, url=p.url)
+                if url_cache[p.url]:
+                    child_pages_from_db.append(p)
             if child_pages_from_db:
                 logger.debug(
                     "found child pages from parent database {}: {}".format(
@@ -381,15 +388,18 @@ def get_recursive_content(
                         ", ".join([p.url for p in child_pages_from_db]),
                     ),
                 )
-            new_pages = [p.id for p in child_pages_from_db if p.id not in processed]
+            new_pages = [p.id for p in child_pages_from_db if p.id not in processed_set]
             child_pages.extend(new_pages)
             parents.extend(
                 [QueueEntry(type=QueueEntryType.PAGE, id=UUID(i)) for i in new_pages],
             )
 
-            child_dbs_from_db = [
-                p for p in database_pages if is_database_url(client=client, url=p.url)
-            ]
+            child_dbs_from_db = []
+            for p in database_pages:
+                if p.url not in url_cache:
+                    url_cache[p.url] = is_database_url(client=client, url=p.url)
+                if url_cache[p.url]:
+                    child_dbs_from_db.append(p)
             if child_dbs_from_db:
                 logger.debug(
                     "found child database from parent database {}: {}".format(
@@ -397,7 +407,7 @@ def get_recursive_content(
                         ", ".join([db.url for db in child_dbs_from_db]),
                     ),
                 )
-            new_dbs = [db.id for db in child_dbs_from_db if db.id not in processed]
+            new_dbs = [db.id for db in child_dbs_from_db if db.id not in processed_set]
             child_dbs.extend(new_dbs)
             parents.extend(
                 [QueueEntry(type=QueueEntryType.DATABASE, id=UUID(i)) for i in new_dbs],
