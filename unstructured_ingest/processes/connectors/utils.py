@@ -42,19 +42,22 @@ def format_and_truncate_orig_elements(
     metadata = element.get("metadata", {})
     raw_orig_elements = metadata.get("orig_elements", None)
     orig_elements = []
+    props_to_remove = (
+        "image_base64",
+        "text_as_html",
+        "table_as_cells",
+        "link_urls",
+        "link_texts",
+        "link_start_indexes",
+        "emphasized_text_contents",
+    )
     if raw_orig_elements is not None:
         for element in elements_from_base64_gzipped_json(raw_orig_elements):
             if not include_text:
                 element.pop("text", None)
-            for prop in (
-                "image_base64",
-                "text_as_html",
-                "table_as_cells",
-                "link_urls",
-                "link_texts",
-                "link_start_indexes",
-                "emphasized_text_contents",
-            ):
-                element["metadata"].pop(prop, None)
+            meta = element["metadata"]
+            meta_pop = meta.pop
+            for prop in props_to_remove:
+                meta_pop(prop, None)
             orig_elements.append(element)
     return orig_elements

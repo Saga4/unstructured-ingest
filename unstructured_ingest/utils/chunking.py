@@ -49,8 +49,4 @@ def assign_and_map_hash_ids(elements: list[dict]) -> list[dict]:
 
 
 def elements_from_base64_gzipped_json(raw_s: str) -> list[dict]:
-    decoded_b64_bytes = base64.b64decode(raw_s)
-    elements_json_bytes = zlib.decompress(decoded_b64_bytes)
-    elements_json_str = elements_json_bytes.decode("utf-8")
-    element_dicts = json.loads(elements_json_str)
-    return element_dicts
+    return json.loads(zlib.decompress(base64.b64decode(raw_s)).decode("utf-8"))
