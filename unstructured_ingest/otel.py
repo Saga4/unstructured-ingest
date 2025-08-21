@@ -34,18 +34,11 @@ class LogSpanExporter(ConsoleSpanExporter):
 
 
 def get_log_out() -> Callable:
-    level_names_mapping = {
-        "CRITICAL": logging.CRITICAL,
-        "FATAL": logging.FATAL,
-        "ERROR": logging.ERROR,
-        "WARN": logging.WARNING,
-        "WARNING": logging.WARNING,
-        "INFO": logging.INFO,
-        "DEBUG": logging.DEBUG,
-        "NOTSET": logging.NOTSET,
-    }
-    log_level = os.getenv("OTEL_LOG_LEVEL", "DEBUG").upper()
-    log_level_int = level_names_mapping.get(log_level, logging.DEBUG)
+    log_level = os.getenv("OTEL_LOG_LEVEL")
+    if log_level is not None:
+        log_level_int = level_names_mapping.get(log_level.upper(), logging.DEBUG)
+    else:
+        log_level_int = logging.DEBUG
     return lambda message: logger.log(log_level_int, message)
 
 
@@ -126,3 +119,15 @@ class OtelHandler:
 
     def get_tracer(self) -> Tracer:
         return trace.get_tracer(self.service_name)
+
+
+level_names_mapping = {
+    "CRITICAL": logging.CRITICAL,
+    "FATAL": logging.FATAL,
+    "ERROR": logging.ERROR,
+    "WARN": logging.WARNING,
+    "WARNING": logging.WARNING,
+    "INFO": logging.INFO,
+    "DEBUG": logging.DEBUG,
+    "NOTSET": logging.NOTSET,
+}
