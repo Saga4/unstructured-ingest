@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Literal, Optional
 
 from pydantic import BaseModel, Field, SecretStr
 
+from unstructured_ingest.embed.voyageai import VoyageAIEmbeddingConfig, VoyageAIEmbeddingEncoder
 from unstructured_ingest.interfaces.process import BaseProcess
 from unstructured_ingest.utils.data_prep import get_json_data
 
@@ -119,14 +120,10 @@ class EmbedderConfig(BaseModel):
         )
 
     def get_voyageai_embedder(self, embedding_kwargs: dict) -> "BaseEmbeddingEncoder":
-        from unstructured_ingest.embed.voyageai import (
-            VoyageAIEmbeddingConfig,
-            VoyageAIEmbeddingEncoder,
-        )
-
-        return VoyageAIEmbeddingEncoder(
-            config=VoyageAIEmbeddingConfig.model_validate(embedding_kwargs)
-        )
+        # Direct import at top-level avoids repeated import each function call
+        # Directly validate config and construct encoder
+        config = VoyageAIEmbeddingConfig.model_validate(embedding_kwargs)
+        return VoyageAIEmbeddingEncoder(config=config)
 
     def get_mixedbread_embedder(self, embedding_kwargs: dict) -> "BaseEmbeddingEncoder":
         from unstructured_ingest.embed.mixedbreadai import (
