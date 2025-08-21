@@ -21,7 +21,12 @@ class SelectOption(FromJSONMixin):
 
     @classmethod
     def from_dict(cls, data: dict):
-        return cls(**data)
+        return cls(
+            color=data["color"],
+            id=data["id"],
+            name=data["name"],
+            description=data.get("description"),
+        )
 
 
 @dataclass
@@ -30,7 +35,11 @@ class SelectProp(FromJSONMixin):
 
     @classmethod
     def from_dict(cls, data: dict):
-        return cls(options=[SelectOption.from_dict(o) for o in data.get("options", [])])
+        options = data.get("options", [])
+        if not options:
+            return cls(options=[])
+        from_dict = SelectOption.from_dict
+        return cls(options=[from_dict(o) for o in options])
 
 
 @dataclass
