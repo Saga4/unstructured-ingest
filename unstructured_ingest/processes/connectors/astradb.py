@@ -309,23 +309,32 @@ class AstraDBUploadStager(UploadStager):
     )
 
     def truncate_dict_elements(self, element_dict: dict) -> None:
+        # Avoid repeated lookups; operate in-place as early as possible
         text = element_dict.pop("text", None)
         if text is not None:
             element_dict["text"] = truncate_string_bytes(text, MAX_CONTENT_PARAM_BYTE_SIZE)
+
         metadata = element_dict.get("metadata")
-        if metadata is not None and isinstance(metadata, dict):
-            text_as_html = element_dict["metadata"].pop("text_as_html", None)
-            if text_as_html is not None:
-                element_dict["metadata"]["text_as_html"] = truncate_string_bytes(
-                    text_as_html, MAX_CONTENT_PARAM_BYTE_SIZE
-                )
-            metadata["original_elements"] = format_and_truncate_orig_elements(element_dict)
-            metadata.pop("orig_elements", None)
+        if not metadata or not isinstance(metadata, dict):
+            return
+
+        md = metadata  # local alias, used multiple times
+
+        # Only pop and set text_as_html if it exists
+        text_as_html = md.pop("text_as_html", None)
+        if text_as_html is not None:
+            md["text_as_html"] = truncate_string_bytes(text_as_html, MAX_CONTENT_PARAM_BYTE_SIZE)
+
+        # Only call format_and_truncate_orig_elements if 'orig_elements' is present
+        if "orig_elements" in md:
+            md["original_elements"] = format_and_truncate_orig_elements(element_dict)
+            md.pop("orig_elements", None)
 
     def conform_dict(self, element_dict: dict, file_data: FileData) -> dict:
         self.truncate_dict_elements(element_dict)
-        if self.upload_stager_config.flatten_metadata:
-            # move metadata to top level so it isn't nested in metadata column
+        flatten = self.upload_stager_config.flatten_metadata
+        # Avoid pop if we are not flattening
+        if flatten:
             metadata = element_dict.pop("metadata", None)
             if metadata:
                 element_dict.update(metadata)
