@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import importlib
+import sys
 from functools import wraps
 from typing import (
     Callable,
@@ -69,6 +70,8 @@ def requires_dependencies(
 
 
 def dependency_exists(dependency: str):
+    if dependency in sys.modules:
+        return True
     try:
         importlib.import_module(dependency)
     except ImportError as e:
