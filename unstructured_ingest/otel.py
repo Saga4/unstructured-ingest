@@ -84,10 +84,9 @@ class OtelHandler:
     def get_otel_endpoint(self) -> Optional[str]:
         if otel_endpoint := self.otel_endpoint:
             return otel_endpoint
-        if otlp_endpoint := os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT"):
-            return otlp_endpoint
-        if otlp_traces_endpoint := os.getenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"):
-            return otlp_traces_endpoint
+        for key in _OTLP_ENV_KEYS:
+            if value := os.environ.get(key):
+                return value
         return None
 
     def _add_console_trace_processor(self, provider: TracerProvider) -> None:
@@ -107,10 +106,27 @@ class OtelHandler:
         otel_endpoint = self.get_otel_endpoint()
         if not otel_endpoint:
             return None
-        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+
+        cls = getattr(self, "_OTLPSpanExporter_cls", None)
+        if cls is None:
+            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+
+            self._OTLPSpanExporter_cls = OTLPSpanExporter
+            cls = OTLPSpanExporter
 
         logger.debug(f"adding otel exported at {otel_endpoint}")
-        trace_exporter = OTLPSpanExporter()
+
+        exporter_cache = getattr(self, "_span_exporter_cache", None)
+        if exporter_cache is None:
+            exporter_cache = {}
+            setattr(self, "_span_exporter_cache", exporter_cache)
+
+        if otel_endpoint not in exporter_cache:
+            trace_exporter = cls()
+            exporter_cache[otel_endpoint] = trace_exporter
+        else:
+            trace_exporter = exporter_cache[otel_endpoint]
+
         processor = SimpleSpanProcessor(trace_exporter)
         provider.add_span_processor(processor)
 
@@ -126,3 +142,9 @@ class OtelHandler:
 
     def get_tracer(self) -> Tracer:
         return trace.get_tracer(self.service_name)
+
+
+_OTLP_ENV_KEYS = (
+    "OTEL_EXPORTER_OTLP_ENDPOINT",
+    "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+)
