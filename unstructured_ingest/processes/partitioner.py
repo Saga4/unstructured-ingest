@@ -89,16 +89,22 @@ class PartitionerConfig(BaseModel):
             )
 
     def to_partition_kwargs(self) -> dict[str, Any]:
-        partition_kwargs: dict[str, Any] = {
-            "strategy": self.strategy,
-            "languages": self.ocr_languages,
-            "hi_res_model_name": self.hi_res_model_name,
-            "skip_infer_table_types": self.skip_infer_table_types,
-        }
-        # Don't inject information if None and allow default values in method to be used
-        partition_kwargs = {k: v for k, v in partition_kwargs.items() if v is not None}
-        if self.additional_partition_args:
-            partition_kwargs.update(self.additional_partition_args)
+        partition_kwargs: dict[str, Any] = {}
+
+        # Inline filtering, avoid initial dict then filter
+        if self.strategy is not None:
+            partition_kwargs["strategy"] = self.strategy
+        if self.ocr_languages is not None:
+            partition_kwargs["languages"] = self.ocr_languages
+        if self.hi_res_model_name is not None:
+            partition_kwargs["hi_res_model_name"] = self.hi_res_model_name
+        if self.skip_infer_table_types is not None:
+            partition_kwargs["skip_infer_table_types"] = self.skip_infer_table_types
+
+        # Prefer direct loop vs update for potentially large dicts (update is fine, but only run if args present)
+        additional_args = self.additional_partition_args
+        if additional_args:
+            partition_kwargs.update(additional_args)
         return partition_kwargs
 
 
