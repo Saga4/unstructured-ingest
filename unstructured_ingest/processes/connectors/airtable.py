@@ -99,8 +99,7 @@ class AirtableIndexerConfig(IndexerConfig):
 
     @classmethod
     def validate_path(cls, path: str):
-        components = path.split("/")
-        if len(components) > 3:
+        if path.count("/") > 2:
             raise ValueError(
                 f"Path must be of the format: base_id/table_id/view_id, "
                 f"where table id and view id are optional. Got: {path}"
@@ -109,8 +108,9 @@ class AirtableIndexerConfig(IndexerConfig):
     @field_validator("list_of_paths")
     @classmethod
     def validate_format(cls, v: list[str]) -> list[str]:
+        validate_path = cls.validate_path
         for path in v:
-            cls.validate_path(path=path)
+            validate_path(path=path)
         return v
 
 
