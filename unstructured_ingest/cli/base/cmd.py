@@ -2,6 +2,7 @@ import inspect
 from abc import ABC, abstractmethod
 from collections import Counter
 from dataclasses import dataclass, field, fields
+from functools import lru_cache
 from typing import Any, Optional, Type, TypeVar
 
 import click
@@ -209,7 +210,7 @@ class BaseCmd(ABC):
     def get_custom_stager(
         stager_reference: str, stager_config_kwargs: Optional[dict] = None
     ) -> Optional[UploadStagerT]:
-        uploader_cls = import_from_string(stager_reference)
+        uploader_cls = _cached_import_from_string(stager_reference)
         if not inspect.isclass(uploader_cls):
             raise ValueError(
                 f"custom stager must be a reference to a python class, got: {type(uploader_cls)}"
@@ -267,3 +268,8 @@ class BaseCmd(ABC):
             )
         uploader_cls = dest_entry.uploader
         return uploader_cls(**uploader_kwargs)
+
+
+@lru_cache(maxsize=64)
+def _cached_import_from_string(import_str: str):
+    return import_from_string(import_str)
