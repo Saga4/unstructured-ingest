@@ -42,34 +42,36 @@ def process_block(
     child_pages: list,
     child_databases: list,
 ) -> Tuple[dict, list, list, dict]:
-    if isinstance(current_block["block"].block, notion_blocks.ChildPage) and current_block[
-        "block"
-    ].id != str(parent_page_id):
-        child_pages.append(current_block["block"].id)
+    block_top = current_block["block"]
+    block_obj = block_top.block
+
+    if isinstance(block_obj, notion_blocks.ChildPage) and block_top.id != str(parent_page_id):
+        child_pages.append(block_top.id)
         return {}, child_pages, child_databases
-    if isinstance(current_block["block"].block, notion_blocks.ChildDatabase):
-        child_databases.append(current_block["block"].id)
+    if isinstance(block_obj, notion_blocks.ChildDatabase):
+        child_databases.append(block_top.id)
         return {}, child_pages, child_databases
 
     # recursively go through all blocks in a page, store each block in a dictionary
-    if current_block["block"].has_children:
+    if block_top.has_children:
         children = []
-        for children_block in client.blocks.children.iterate_list(
-            block_id=current_block["block"].id
-        ):
+        for children_block in client.blocks.children.iterate_list(block_id=block_top.id):
             children.extend(children_block)
         if children:
+            append_children = current_block["children"].append
+            parent_id = block_top.id
+            level = current_block["level"] + 1
             for child in children:
                 child_block = {
                     "block": child,
-                    "level": current_block["level"] + 1,
+                    "level": level,
                     "children": [],
-                    "parent_id": current_block["block"].id,
+                    "parent_id": parent_id,
                 }
                 child_element, child_pages, child_databases = process_block(
                     child_block, parent_page_id, client, child_pages, child_databases
                 )
-                current_block["children"].append(child_element)
+                append_children(child_element)
     return current_block, child_pages, child_databases
 
 
