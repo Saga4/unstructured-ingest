@@ -159,9 +159,11 @@ def unwrap_optional(val: Any) -> tuple[Any, bool]:
 
 def extract_config(flat_data: dict, config: Type[BaseModelT]) -> BaseModelT:
     fields = config.model_fields
-    config.model_config = ConfigDict(extra="ignore")
-    field_names = [v.alias or k for k, v in fields.items()]
-    data = {k: v for k, v in flat_data.items() if k in field_names and v is not None}
+    cfg = getattr(config, "model_config", None)
+    if cfg is None or cfg.get("extra") != "ignore":
+        config.model_config = ConfigDict(extra="ignore")
+    field_names_set = {v.alias or k for k, v in fields.items()}
+    data = {k: v for k, v in flat_data.items() if k in field_names_set and v is not None}
     if access_config := fields.get("access_config"):
         access_config_type = access_config.annotation
         access_config_type, is_optional = unwrap_optional(access_config_type)
@@ -177,9 +179,9 @@ def extract_config(flat_data: dict, config: Type[BaseModelT]) -> BaseModelT:
             ac_fields = access_config_type.model_fields
         else:
             raise TypeError(f"Unrecognized access_config type: {access_config_type}")
-        ac_field_names = [v.alias or k for k, v in ac_fields.items()]
+        ac_field_names_set = {v.alias or k for k, v in ac_fields.items()}
         access_config_data = {
-            k: v for k, v in flat_data.items() if k in ac_field_names and v is not None
+            k: v for k, v in flat_data.items() if k in ac_field_names_set and v is not None
         }
         if not access_config_data and is_optional:
             data["access_config"] = None
