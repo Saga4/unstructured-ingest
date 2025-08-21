@@ -187,30 +187,44 @@ def extract_database_html(
 ) -> HtmlExtractionResponse:
     logger.debug(f"processing database id: {database_id}")
     database: Database = client.databases.retrieve(database_id=database_id)  # type: ignore
-    property_keys = list(database.properties.keys())
-    property_keys = sorted(property_keys)
-    table_html_rows = []
+    property_keys = sorted(database.properties.keys())
+
+    # Prepare header row only once
+    table_html_rows = [Tr([], [Th([], k) for k in property_keys])]
     child_pages: List[str] = []
     child_databases: List[str] = []
-    # Create header row
-    table_html_rows.append(Tr([], [Th([], k) for k in property_keys]))
 
+    # Collect all pages from generator
     all_pages = []
     for page_chunk in client.databases.iterate_query(database_id=database_id):  # type: ignore
         all_pages.extend(page_chunk)
 
     logger.debug(f"creating {len(all_pages)} rows")
     for page in all_pages:
-        if is_database_url(client=client, url=page.url):
-            child_databases.append(page.id)
-        if is_page_url(client=client, url=page.url):
-            child_pages.append(page.id)
+        # Combine url parse and type check to minimize lookups
+        url = page.url
+        parsed_url = urlparse(url)
+        path = parsed_url.path.split("/")[-1]
+        if parsed_url.netloc == "www.notion.so":
+            # Only parse UUID and check status if netloc is correct
+            page_uuid = get_uuid_from_url(path=path)
+            if page_uuid:
+                check_page_resp = client.pages.retrieve_status(page_id=page_uuid)
+                if check_page_resp == 200:
+                    child_pages.append(page.id)
+            database_uuid = get_uuid_from_url(path=path)
+            if database_uuid:
+                check_database_resp = client.databases.retrieve_status(database_id=database_uuid)
+                if check_database_resp == 200:
+                    child_databases.append(page.id)
+
         properties = page.properties
         inner_html = [properties.get(k).get_html() for k in property_keys]  # type: ignore
+        # Use list comprehension for cells and check for falsy html
         table_html_rows.append(
             Tr(
                 [],
-                [Td([], cell) for cell in [html if html else Div([], []) for html in inner_html]],
+                [Td([], cell if cell else Div([], [])) for cell in inner_html],
             ),
         )
 

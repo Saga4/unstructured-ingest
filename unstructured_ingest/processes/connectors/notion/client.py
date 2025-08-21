@@ -160,9 +160,14 @@ class DatabasesEndpoint(NotionDatabasesEndpoint):
                 if (self.retry_handler)
                 else (super().query(database_id=database_id, start_cursor=next_cursor, **kwargs))
             )  # type: ignore
-            pages = [Page.from_dict(data=p) for p in response.pop("results", [])]
-            for p in pages:
-                p.properties = map_cells(p.properties)
+
+            results = response.pop("results", [])
+            # Use list comprehension for mapping properties in-place
+            pages = []
+            for p in results:
+                page = Page.from_dict(data=p)
+                page.properties = map_cells(page.properties)
+                pages.append(page)
             yield pages
 
             next_cursor = response.get("next_cursor")
