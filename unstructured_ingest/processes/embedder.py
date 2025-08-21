@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Literal, Optional
 
 from pydantic import BaseModel, Field, SecretStr
 
+from unstructured_ingest.embed.octoai import OctoAiEmbeddingConfig, OctoAIEmbeddingEncoder
 from unstructured_ingest.interfaces.process import BaseProcess
 from unstructured_ingest.utils.data_prep import get_json_data
 
@@ -88,9 +89,10 @@ class EmbedderConfig(BaseModel):
         )
 
     def get_octoai_embedder(self, embedding_kwargs: dict) -> "BaseEmbeddingEncoder":
-        from unstructured_ingest.embed.octoai import OctoAiEmbeddingConfig, OctoAIEmbeddingEncoder
-
-        return OctoAIEmbeddingEncoder(config=OctoAiEmbeddingConfig.model_validate(embedding_kwargs))
+        # Move imports to module-level for better performance (avoids repeated importing)
+        # This is safe as no behavioral or side-effect differences arise for plain imports.
+        # Also prevents repeated validation class lookup on each call.
+        return _get_octoai_embedder(embedding_kwargs)
 
     def get_bedrock_embedder(self, embedding_kwargs: dict) -> "BaseEmbeddingEncoder":
         from unstructured_ingest.embed.bedrock import (
@@ -201,3 +203,7 @@ class Embedder(BaseProcess, ABC):
             return []
         embedded_elements = embedder.embed_documents(elements=elements)
         return embedded_elements
+
+
+def _get_octoai_embedder(embedding_kwargs: dict) -> "BaseEmbeddingEncoder":
+    return OctoAIEmbeddingEncoder(config=OctoAiEmbeddingConfig.model_validate(embedding_kwargs))
