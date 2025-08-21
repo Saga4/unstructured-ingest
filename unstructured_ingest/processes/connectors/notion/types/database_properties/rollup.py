@@ -21,7 +21,16 @@ class RollupProp(FromJSONMixin):
 
     @classmethod
     def from_dict(cls, data: dict):
-        return cls(**data)
+        try:
+            return cls(
+                data["function"],
+                data["relation_property_id"],
+                data["relation_property_name"],
+                data["rollup_property_id"],
+                data["rollup_property_name"],
+            )
+        except KeyError:
+            return cls(**data)
 
 
 @dataclass
