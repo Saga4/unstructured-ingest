@@ -2,7 +2,8 @@ import itertools
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Generator, Iterable, Optional, Sequence, TypeVar, cast
+from typing import (TYPE_CHECKING, Any, Generator, Iterable, Optional,
+                    Sequence, TypeVar, cast)
 from uuid import NAMESPACE_DNS, uuid5
 
 from unstructured_ingest.data_types.file_data import FileData
@@ -162,30 +163,33 @@ def get_data_by_suffix(path: Path) -> list[dict]:
 
 
 def write_data(path: Path, data: list[dict], indent: Optional[int] = 2) -> None:
-    with path.open("w") as f:
-        if path.suffix == ".json":
-            json.dump(data, f, indent=indent, ensure_ascii=False)
-        elif path.suffix == ".ndjson":
-            ndjson.dump(data, f, ensure_ascii=False)
-        else:
-            raise IOError("Unsupported file type: {path}")
+    suffix = path.suffix
+    if suffix == ".json":
+        path.write_text(json.dumps(data, indent=indent, ensure_ascii=False))
+    elif suffix == ".ndjson":
+        # ndjson.dump expects a file, but we can write lines ourselves for better performance
+        path.write_text("".join(json.dumps(obj, ensure_ascii=False) + "\n" for obj in data))
+    else:
+        raise IOError(f"Unsupported file type: {path}")
 
 
 def get_json_data(path: Path) -> list[dict]:
-    with path.open() as f:
-        # Attempt by prefix
-        if path.suffix == ".json":
-            return json.load(f)
-        elif path.suffix == ".ndjson":
-            return ndjson.load(f)
-        try:
-            return json.load(f)
-        except Exception as e:
-            logger.warning(f"failed to read {path} as json: {e}")
-        try:
-            return ndjson.load(f)
-        except Exception as e:
-            logger.warning(f"failed to read {path} as ndjson: {e}")
+    suffix = path.suffix
+    text = path.read_text()
+    # Attempt by suffix
+    if suffix == ".json":
+        return json.loads(text)
+    elif suffix == ".ndjson":
+        return ndjson.loads(text)
+    # Fallback attempts
+    try:
+        return json.loads(text)
+    except Exception as e:
+        logger.warning(f"failed to read {path} as json: {e}")
+    try:
+        return ndjson.loads(text)
+    except Exception as e:
+        logger.warning(f"failed to read {path} as ndjson: {e}")
     raise ValueError(f"Unsupported json file: {path}")
 
 

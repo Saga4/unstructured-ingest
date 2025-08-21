@@ -27,8 +27,8 @@ class UploadStager(BaseProcess, ABC):
 
     def get_output_path(self, output_filename: str, output_dir: Path) -> Path:
         output_path = Path(output_filename)
-        output_filename = f"{Path(output_filename).stem}{output_path.suffix}"
-        output_path = Path(output_dir) / Path(f"{output_filename}")
+        out_name = f"{output_path.stem}{output_path.suffix}"
+        output_path = Path(output_dir) / out_name
         output_path.parent.mkdir(parents=True, exist_ok=True)
         return output_path
 
