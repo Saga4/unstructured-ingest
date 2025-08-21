@@ -153,4 +153,8 @@ recognized_errors = [
 
 
 def is_internal_error(e: Exception) -> bool:
-    return any(isinstance(e, recognized_error) for recognized_error in recognized_errors)
+    recognized_error_tuple = tuple(recognized_errors)
+    return isinstance(e, recognized_error_tuple)
+
+
+_recognized_errors_tuple = tuple(recognized_errors)
