@@ -9,11 +9,12 @@ from pydantic.types import _SecretBase
 
 
 def is_secret(value: Any) -> bool:
-    # Case Secret[int]
-    if hasattr(value, "__origin__") and hasattr(value, "__args__"):
-        origin = value.__origin__
+    # Cache attribute lookup and branch earlier to avoid redundant checks
+    origin = getattr(value, "__origin__", None)
+    if origin is not None and hasattr(value, "__args__"):
+        # origin may not always be a class, guard with isclass first
         return isclass(origin) and issubclass(origin, _SecretBase)
-    # Case SecretStr
+    # Fast path when value is actually a class
     return isclass(value) and issubclass(value, _SecretBase)
 
 
@@ -24,7 +25,6 @@ def serialize_base_model(model: BaseModel) -> dict:
 
 
 def serialize_base_dict(model_dict: dict) -> dict:
-    model_dict = model_dict.copy()
     for k, v in model_dict.items():
         if isinstance(v, _SecretBase):
             secret_value = v.get_secret_value()
@@ -32,9 +32,8 @@ def serialize_base_dict(model_dict: dict) -> dict:
                 model_dict[k] = serialize_base_model(model=secret_value)
             else:
                 model_dict[k] = secret_value
-        if isinstance(v, dict):
+        elif isinstance(v, dict):
             model_dict[k] = serialize_base_dict(model_dict=v)
-
     return model_dict
 
 
