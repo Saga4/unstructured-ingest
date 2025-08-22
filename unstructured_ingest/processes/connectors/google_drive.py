@@ -437,16 +437,6 @@ class GoogleDriveIndexer(Indexer):
             logger.debug("no permissions found")
             return [{}]
 
-        # https://developers.google.com/workspace/drive/api/guides/ref-roles
-        role_mapping = {
-            "owner": ["read", "update", "delete"],
-            "organizer": ["read", "update", "delete"],
-            "fileOrganizer": ["read", "update"],
-            "writer": ["read", "update"],
-            "commenter": ["read"],
-            "reader": ["read"],
-        }
-
         normalized_permissions = {
             "read": {"users": set(), "groups": set()},
             "update": {"users": set(), "groups": set()},
@@ -456,12 +446,13 @@ class GoogleDriveIndexer(Indexer):
         for item in permissions:
             # https://developers.google.com/workspace/drive/api/reference/rest/v3/permissions
             # ignore permissions for "anyone" and "domain"
-            if item["type"] in ["user", "group"]:
-                type_key = item["type"] + "s"
-                for operation in role_mapping[item["role"]]:
-                    normalized_permissions[operation][type_key].add(item["id"])
+            t = item["type"]
+            if t in USER_TYPES_SET:
+                type_key = TYPE_KEY_MAP[t]
+                for op in ROLE_MAPPING[item["role"]]:
+                    normalized_permissions[op][type_key].add(item["id"])
 
-        # turn sets into sorted lists for consistency and json serialization
+        # In-place sorted list conversion for consistency and json serialization
         for role_dict in normalized_permissions.values():
             for key in role_dict:
                 role_dict[key] = sorted(role_dict[key])
@@ -844,3 +835,16 @@ google_drive_source_entry = SourceRegistryEntry(
     downloader_config=GoogleDriveDownloaderConfig,
     downloader=GoogleDriveDownloader,
 )
+
+ROLE_MAPPING = {
+    "owner": ["read", "update", "delete"],
+    "organizer": ["read", "update", "delete"],
+    "fileOrganizer": ["read", "update"],
+    "writer": ["read", "update"],
+    "commenter": ["read"],
+    "reader": ["read"],
+}
+
+USER_TYPES_SET = {"user", "group"}
+
+TYPE_KEY_MAP = {"user": "users", "group": "groups"}
