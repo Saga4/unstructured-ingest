@@ -101,7 +101,7 @@ class HtmlMixin(BaseModel):
         hrefs = [
             tag["href"]
             for tag in tags
-            if not tag["href"].startswith("#") and Path(tag["href"]).suffix != ""
+            if not tag["href"].startswith("#") and "." in tag["href"].split("/")[-1]
         ]
         absolute_urls = [self.get_absolute_url(tag_link=href, url=url) for href in hrefs]
         allowed_urls = [
@@ -134,7 +134,6 @@ class HtmlMixin(BaseModel):
             result_file_data.metadata.record_locator = {}
         result_file_data.metadata.record_locator["parent_url"] = url
         result_file_data.identifier = str(uuid5(NAMESPACE_DNS, url + file_data.identifier))
-        filename = Path(urlparse(url=url).path).name
         result_file_data.source_identifiers = SourceIdentifiers(
             filename=filename, fullpath=filename
         )
