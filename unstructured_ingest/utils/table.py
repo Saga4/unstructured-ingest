@@ -70,11 +70,22 @@ def convert_to_pandas_dataframe(
         if metadata := d.pop("metadata", None):
             d.update(flatten_dict(metadata, keys_to_omit=["data_source_record_locator"]))
 
+    dtypes = get_default_pandas_dtypes()
+    if elements_dict:
+        # Ensure only columns found in the data are set with dtypes
+        keys = set()
+        for d in elements_dict:
+            keys.update(d.keys())
+        filtered_dtypes = {k: v for k, v in dtypes.items() if k in keys}
+    else:
+        filtered_dtypes = {}
+
     df = pd.DataFrame.from_dict(
         elements_dict,
+        dtype=None,  # Defaults to None: we'll apply dtypes below for optimal performance
     )
-    dt = {k: v for k, v in get_default_pandas_dtypes().items() if k in df.columns}
-    df = df.astype(dt)
+    if filtered_dtypes:
+        df = df.astype(filtered_dtypes)
     if drop_empty_cols:
         df.dropna(axis=1, how="all", inplace=True)
     return df
