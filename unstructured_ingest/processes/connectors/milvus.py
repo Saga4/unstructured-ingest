@@ -52,8 +52,7 @@ class MilvusConnectionConfig(ConnectionConfig):
     def get_connection_kwargs(self) -> dict[str, Any]:
         access_config = self.access_config.get_secret_value()
         access_config_dict = access_config.model_dump()
-        connection_config_dict = self.model_dump()
-        connection_config_dict.pop("access_config", None)
+        connection_config_dict = self.model_dump(exclude={"access_config"})
         connection_config_dict.update(access_config_dict)
         # Drop any that were not set explicitly
         connection_config_dict = {k: v for k, v in connection_config_dict.items() if v is not None}
