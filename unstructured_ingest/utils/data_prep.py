@@ -77,7 +77,7 @@ def flatten_dict(
     well. If remove_none is True, then None keys/values are removed from the flattened
     dictionary.
     """
-    keys_to_omit = keys_to_omit if keys_to_omit else []
+    keys_to_omit = set(keys_to_omit) if keys_to_omit else []
     flattened_dict: dict[str, Any] = {}
     for key, value in dictionary.items():
         new_key = f"{parent_key}{separator}{key}" if parent_key else key
