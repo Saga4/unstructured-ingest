@@ -118,7 +118,11 @@ class SharepointIndexer(OnedriveIndexer):
 
     def _is_root_path(self, path: str) -> bool:
         """Check if the path represents root access (empty string or legacy default)."""
-        return not path or not path.strip() or path == LEGACY_DEFAULT_PATH
+        if not path or path == LEGACY_DEFAULT_PATH:
+            return True
+        if path.isspace():
+            return True
+        return False
 
     def _get_target_drive_item(self, site_drive_item: DriveItem, path: str) -> DriveItem:
         """Get the drive item to search in based on the path."""
