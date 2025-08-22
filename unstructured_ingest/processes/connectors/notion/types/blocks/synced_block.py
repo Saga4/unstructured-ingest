@@ -51,15 +51,19 @@ class DuplicateSyncedBlock(BlockBase):
 
         Duplicate blocks contain a 'synced_from' reference.
         """
-        synced_from_data = data.get("synced_from")
-        if not synced_from_data or not isinstance(synced_from_data, dict):
-            raise ValueError(f"Invalid data structure for DuplicateSyncedBlock: {data}")
-        # Ensure required keys are present in the nested dictionary
-        if "type" not in synced_from_data or "block_id" not in synced_from_data:
+        try:
+            synced_from_data = data["synced_from"]
+            if not isinstance(synced_from_data, dict):
+                raise ValueError(f"Invalid data structure for DuplicateSyncedBlock: {data}")
+            type = synced_from_data["type"]
+            block_id = synced_from_data["block_id"]
+        except KeyError:
+            if "synced_from" not in data:
+                raise ValueError(f"Invalid data structure for DuplicateSyncedBlock: {data}")
             raise ValueError(
                 f"Missing 'type' or 'block_id' in synced_from data: {synced_from_data}"
             )
-        return cls(type=synced_from_data["type"], block_id=synced_from_data["block_id"])
+        return cls(type=type, block_id=block_id)
 
     def get_html(self) -> Optional[HtmlTag]:
         """Get HTML representation of the duplicate synced block.
