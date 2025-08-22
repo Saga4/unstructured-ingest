@@ -34,16 +34,12 @@ class LocalKafkaConnectionConfig(KafkaConnectionConfig):
     )
 
     def get_consumer_configuration(self) -> dict:
-        bootstrap = self.bootstrap_server
-        port = self.port
-
-        conf = {
-            "bootstrap.servers": f"{bootstrap}:{port}",
+        return {
+            "bootstrap.servers": f"{self.bootstrap_server}:{self.port}",
             "group.id": self.group_id,
             "enable.auto.commit": "false",
             "auto.offset.reset": "earliest",
         }
-        return conf
 
     def get_producer_configuration(self) -> dict:
         bootstrap = self.bootstrap_server
