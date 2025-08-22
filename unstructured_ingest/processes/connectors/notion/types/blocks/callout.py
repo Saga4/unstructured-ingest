@@ -60,10 +60,10 @@ class FileIconContent(FromJSONMixin):
     def from_dict(cls, data: dict):
         # Only include expiry_time if it exists in the dictionary
         # Notion API might not always include it
-        init_data = {"url": data.get("url")}
         if "expiry_time" in data:
-            init_data["expiry_time"] = data.get("expiry_time")
-        return cls(**init_data)
+            return cls(data.get("url"), expiry_time=data.get("expiry_time"))
+        else:
+            return cls(data.get("url"))
 
 
 @dataclass
