@@ -32,7 +32,13 @@ class ExternalIconContent(FromJSONMixin):
 
     @classmethod
     def from_dict(cls, data: dict):
-        return cls(**data)
+        # Fast path: Avoids the overhead of unpacking if data is already correct type
+        # This slightly reduces function call overhead for dataclasses with only a few fields
+        try:
+            return cls(data["url"])
+        except KeyError:
+            # fallback to general case for compatibility (should not occur in normal use)
+            return cls(**data)
 
 
 @dataclass
