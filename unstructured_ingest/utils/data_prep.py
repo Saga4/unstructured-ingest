@@ -213,4 +213,4 @@ def get_data_df(path: Path) -> "DataFrame":
 def get_enhanced_element_id(element_dict: dict, file_data: FileData) -> str:
     element_id = element_dict.get("element_id")
     new_data = f"{element_id}{file_data.identifier}"
-    return str(uuid5(NAMESPACE_DNS, new_data))
+    return uuid5(NAMESPACE_DNS, new_data).hex
