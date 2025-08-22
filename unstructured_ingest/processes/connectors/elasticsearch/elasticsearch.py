@@ -102,7 +102,8 @@ class ElasticsearchConnectionConfig(ConnectionConfig):
 
     @field_validator("hosts", mode="before")
     def to_list(cls, value):
-        if isinstance(value, str):
+        # Fast-path for common input types - saves isinstance overhead
+        if type(value) is str:
             return [value]
         return value
 
