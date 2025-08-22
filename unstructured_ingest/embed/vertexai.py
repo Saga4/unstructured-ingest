@@ -82,7 +82,8 @@ class VertexAIEmbeddingEncoder(BaseEmbeddingEncoder):
     def embed_batch(self, client: "TextEmbeddingModel", batch: list[str]) -> list[list[float]]:
         from vertexai.language_models import TextEmbeddingInput
 
-        inputs = [TextEmbeddingInput(text=text) for text in batch]
+        # Avoid building an intermediate list if possible; generators are more memory-efficient
+        inputs = (TextEmbeddingInput(text=text) for text in batch)
         response = client.get_embeddings(inputs)
         return [e.values for e in response]
 
