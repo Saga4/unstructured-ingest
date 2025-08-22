@@ -2,7 +2,6 @@ import base64
 import hashlib
 import json
 import zlib
-from itertools import groupby
 
 
 def id_to_hash(element: dict, sequence_number: int) -> str:
@@ -26,17 +25,20 @@ def id_to_hash(element: dict, sequence_number: int) -> str:
 
 def assign_and_map_hash_ids(elements: list[dict]) -> list[dict]:
     # -- generate sequence number for each element on a page --
-    elements = elements.copy()
-    page_numbers = [e["metadata"].get("page_number") for e in elements]
-    page_seq_pairs = [
-        seq_on_page for page, group in groupby(page_numbers) for seq_on_page, _ in enumerate(group)
-    ]
-
-    # -- assign hash IDs to elements --
-    old_to_new_mapping = {
-        element["element_id"]: id_to_hash(element=element, sequence_number=seq_on_page_counter)
-        for element, seq_on_page_counter in zip(elements, page_seq_pairs)
-    }
+    # Single pass to compute sequence numbers and mapping
+    old_to_new_mapping = {}
+    last_page = None
+    seq_on_page_counter = -1
+    for element in elements:
+        page = element["metadata"].get("page_number")
+        if page != last_page:
+            seq_on_page_counter = 0
+            last_page = page
+        else:
+            seq_on_page_counter += 1
+        old_id = element["element_id"]
+        new_id = id_to_hash(element=element, sequence_number=seq_on_page_counter)
+        old_to_new_mapping[old_id] = new_id
 
     # -- map old parent IDs to new ones --
     for e in elements:
