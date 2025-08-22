@@ -45,7 +45,7 @@ class BlockParent(FromJSONMixin):
 
     @classmethod
     def from_dict(cls, data: dict):
-        return cls(block_id=data["block_id"])
+        return cls(data["block_id"])
 
 
 @dataclass
