@@ -106,6 +106,14 @@ class ChromaUploadStager(UploadStager):
             return datetime.fromtimestamp(timestamp)
         except Exception as e:
             logger.debug(f"date {date_string} string not a timestamp: {e}")
+
+        try:
+            if len(date_string) >= 10:
+                if date_string[4] == "-" and date_string[7] == "-":
+                    return datetime.fromisoformat(date_string)
+        except Exception:
+            pass
+
         return parser.parse(date_string)
 
     def conform_dict(self, element_dict: dict, file_data: FileData) -> dict:
