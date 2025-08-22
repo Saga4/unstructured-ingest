@@ -23,7 +23,7 @@ class PageParent(FromJSONMixin):
 
     @classmethod
     def from_dict(cls, data: dict):
-        return cls(page_id=data["page_id"])
+        return cls(data["page_id"])
 
 
 # https://developers.notion.com/reference/parent-object#workspace-parent
