@@ -32,7 +32,8 @@ class TableCell(FromJSONMixin):
 
     @classmethod
     def from_dict(cls, data: dict):
-        return cls(rich_texts=[RichText.from_dict(rt) for rt in data.pop("rich_texts", [])])
+        # Use get instead of pop for better performance and avoiding mutation
+        return cls(rich_texts=[RichText.from_dict(rt) for rt in data.get("rich_texts", [])])
 
     def get_html(self, is_header: bool) -> Optional[HtmlTag]:
         if is_header:
@@ -50,7 +51,10 @@ class TableRow(BlockBase):
     @classmethod
     def from_dict(cls, data: dict):
         cells = data.get("cells", [])
-        return cls(cells=[TableCell.from_dict({"rich_texts": c}) for c in cells])
+        # Avoid allocating a new dict for each cell
+        return cls(
+            cells=[TableCell(rich_texts=[RichText.from_dict(rt) for rt in c]) for c in cells]
+        )
 
     @staticmethod
     def can_have_children() -> bool:
