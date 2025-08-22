@@ -33,7 +33,11 @@ def ensure_isoformat_datetime(timestamp: Union[datetime, str]) -> str:
         return timestamp.isoformat()
     elif isinstance(timestamp, str):
         try:
-            # Parse the datetime string in various formats
+            dt = datetime.fromisoformat(timestamp)
+            return dt.isoformat()
+        except ValueError:
+            pass
+        try:
             dt = parser.parse(timestamp)
             return dt.isoformat()
         except ValueError as e:
