@@ -120,10 +120,10 @@ class MilvusUploadStager(UploadStager):
                 working_data[default] = defaults[default]
 
         if self.upload_stager_config.fields_to_include:
+            fields_to_include_set = set(self.upload_stager_config.fields_to_include)
             data_keys = set(working_data.keys())
-            for data_key in data_keys:
-                if data_key not in self.upload_stager_config.fields_to_include:
-                    working_data.pop(data_key)
+            for data_key in data_keys - fields_to_include_set:
+                working_data.pop(data_key)
             for field_include_key in self.upload_stager_config.fields_to_include:
                 if field_include_key not in working_data:
                     raise KeyError(f"Field '{field_include_key}' is missing in data!")
