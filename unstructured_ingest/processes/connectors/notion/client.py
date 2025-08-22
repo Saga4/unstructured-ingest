@@ -1,5 +1,6 @@
 from typing import Any, Generator, List, Optional, Tuple
 
+import backoff
 import httpx
 import notion_client.errors
 from notion_client import Client as NotionClient
@@ -23,18 +24,9 @@ from unstructured_ingest.utils.dep_check import requires_dependencies
 def _get_retry_strategy(
     endpoint: Endpoint, retry_strategy_config: RetryStrategyConfig
 ) -> RetryHandler:
-    import backoff
-    import httpx
-
-    retryable_exceptions = (
-        httpx.TimeoutException,
-        httpx.HTTPStatusError,
-        notion_client.errors.HTTPResponseError,
-    )
-
     return RetryHandler(
         backoff.expo,
-        retryable_exceptions,
+        _retryable_exceptions,
         max_time=retry_strategy_config.max_retry_time,
         max_tries=retry_strategy_config.max_retries,
         logger=endpoint.parent.logger,
@@ -347,3 +339,10 @@ class AsyncClient(NotionClient):
         """Close all async endpoints."""
         await self.blocks.close()
         await self.databases.close()
+
+
+_retryable_exceptions = (
+    httpx.TimeoutException,
+    httpx.HTTPStatusError,
+    notion_client.errors.HTTPResponseError,
+)
