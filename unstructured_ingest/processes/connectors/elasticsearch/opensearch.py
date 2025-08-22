@@ -132,11 +132,32 @@ class OpenSearchIndexer(ElasticsearchIndexer):
     index_config: OpenSearchIndexerConfig
     client: "OpenSearch" = field(init=False)
 
-    @requires_dependencies(["opensearchpy"], extras="opensearch")
     def load_scan(self):
         from opensearchpy.helpers import scan
 
         return scan
+
+    @staticmethod
+    @requires_dependencies(["opensearchpy"], extras="opensearch")
+    def _check_deps():
+        pass
+
+    @requires_dependencies(["opensearchpy"], extras="opensearch")
+    def _load_scan_once(self):
+        from opensearchpy.helpers import scan
+
+        return scan
+
+    @requires_dependencies(["opensearchpy"], extras="opensearch")
+    def _import_scan(self):
+        from opensearchpy.helpers import scan
+
+        return scan
+
+    @staticmethod
+    @requires_dependencies(["opensearchpy"], extras="opensearch")
+    def _check_deps():
+        pass
 
 
 class OpenSearchDownloaderConfig(ElasticsearchDownloaderConfig):
