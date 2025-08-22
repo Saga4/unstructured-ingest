@@ -1,4 +1,4 @@
-from collections import abc
+from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -62,10 +62,10 @@ class FieldGetter(dict):
 
 
 def nested_object_to_field_getter(obj: dict) -> Union[FieldGetter, dict]:
-    if isinstance(obj, abc.Mapping):
+    if isinstance(obj, Mapping):
         new_object = {}
         for k, v in obj.items():
-            if isinstance(v, abc.Mapping):
+            if isinstance(v, Mapping):
                 new_object[k] = FieldGetter(nested_object_to_field_getter(v))
             else:
                 new_object[k] = v
