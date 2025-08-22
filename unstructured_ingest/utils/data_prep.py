@@ -128,7 +128,26 @@ def validate_date_args(date: Optional[str] = None) -> bool:
     if not date:
         raise ValueError("The argument date is None.")
 
+    # Pre-filter formats by string length to reduce expensive strptime calls
+    date_length = len(date)
+    candidates = []
     for format in DATE_FORMATS:
+        expected_length = len(
+            format.replace("%Y", "0000")
+            .replace("%m", "00")
+            .replace("%d", "00")
+            .replace("%H", "00")
+            .replace("%M", "00")
+            .replace("%S", "00")
+            .replace("%z", "+0000")
+        )
+        if date_length == expected_length:
+            candidates.append(format)
+
+    if not candidates:
+        candidates = DATE_FORMATS
+
+    for format in candidates:
         try:
             datetime.strptime(date, format)
             return True
