@@ -20,7 +20,11 @@ class EmojiIcon(FromJSONMixin, GetHTMLMixin):
 
     @classmethod
     def from_dict(cls, data: dict):
-        return cls(**data)
+        # Fast-path for common case with positional arguments
+        try:
+            return cls(data["emoji"], data.get("type", "emoji"))
+        except KeyError:
+            return cls(**data)
 
     def get_html(self) -> Optional[HtmlTag]:
         return P([], self.emoji)
