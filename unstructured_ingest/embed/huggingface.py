@@ -54,7 +54,9 @@ class HuggingFaceEmbeddingEncoder(BaseEmbeddingEncoder):
         return self._embed_documents(texts=[query])[0]
 
     def _embed_documents(self, texts: list[str]) -> list[list[float]]:
-        client = self.config.get_client()
+        if not hasattr(self, "_cached_client"):
+            self._cached_client = self.config.get_client()
+        client = self._cached_client
         embeddings = client.encode(texts, **self.config.get_encoder_kwargs())
         return embeddings.tolist()
 
