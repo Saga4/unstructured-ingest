@@ -14,6 +14,9 @@ def get_cmd() -> click.Command:
     This function adds all dest_subcommand(s) to each src_subcommand, and adds all of those
     to the main command as nested subcommands.
     """
+    if hasattr(get_cmd, "_cached_cmd"):
+        return get_cmd._cached_cmd
+
     cmd = ingest
     # Add all subcommands
     for src_subcommand in src:
@@ -21,4 +24,6 @@ def get_cmd() -> click.Command:
         for dest_subcommand in dest:
             src_subcommand.add_command(dest_subcommand)
         cmd.add_command(src_subcommand)
+
+    get_cmd._cached_cmd = cmd
     return cmd
