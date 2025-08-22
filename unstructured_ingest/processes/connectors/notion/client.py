@@ -23,14 +23,19 @@ from unstructured_ingest.utils.dep_check import requires_dependencies
 def _get_retry_strategy(
     endpoint: Endpoint, retry_strategy_config: RetryStrategyConfig
 ) -> RetryHandler:
-    import backoff
-    import httpx
+    if not hasattr(_get_retry_strategy, "_cache"):
+        import backoff
+        import httpx
 
-    retryable_exceptions = (
-        httpx.TimeoutException,
-        httpx.HTTPStatusError,
-        notion_client.errors.HTTPResponseError,
-    )
+        _get_retry_strategy._cache = (
+            backoff,
+            (
+                httpx.TimeoutException,
+                httpx.HTTPStatusError,
+                notion_client.errors.HTTPResponseError,
+            ),
+        )
+    backoff, retryable_exceptions = _get_retry_strategy._cache
 
     return RetryHandler(
         backoff.expo,
