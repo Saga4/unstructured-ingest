@@ -2,7 +2,8 @@ import itertools
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Generator, Iterable, Optional, Sequence, TypeVar, cast
+from typing import (TYPE_CHECKING, Any, Generator, Iterable, Optional,
+                    Sequence, TypeVar, cast)
 from uuid import NAMESPACE_DNS, uuid5
 
 from unstructured_ingest.data_types.file_data import FileData
@@ -77,36 +78,46 @@ def flatten_dict(
     well. If remove_none is True, then None keys/values are removed from the flattened
     dictionary.
     """
-    keys_to_omit = keys_to_omit if keys_to_omit else []
+    # Use set for O(1) membership check
+    keys_to_omit_set = set(keys_to_omit) if keys_to_omit else set()
     flattened_dict: dict[str, Any] = {}
+
     for key, value in dictionary.items():
         new_key = f"{parent_key}{separator}{key}" if parent_key else key
-        if new_key in keys_to_omit:
+
+        if new_key in keys_to_omit_set:
             flattened_dict[new_key] = value
-        elif value is None and remove_none:
             continue
-        elif isinstance(value, dict):
+        if value is None and remove_none:
+            continue
+        if isinstance(value, dict):
             value = cast("dict[str, Any]", value)
-            flattened_dict.update(
-                flatten_dict(
-                    value, new_key, separator, flatten_lists, remove_none, keys_to_omit=keys_to_omit
-                ),
+            subdict = flatten_dict(
+                value, new_key, separator, flatten_lists, remove_none, keys_to_omit=keys_to_omit
             )
-        elif isinstance(value, (list, tuple)) and flatten_lists:
+            flattened_dict.update(subdict)
+            continue
+        if isinstance(value, (list, tuple)) and flatten_lists:
             value = cast("list[Any] | tuple[Any]", value)
             for index, item in enumerate(value):
-                flattened_dict.update(
-                    flatten_dict(
-                        {f"{new_key}{separator}{index}": item},
-                        "",
+                item_key = f"{new_key}{separator}{index}"
+                if isinstance(item, dict):
+                    subdict = flatten_dict(
+                        item,
+                        item_key,
                         separator,
                         flatten_lists,
                         remove_none,
                         keys_to_omit=keys_to_omit,
                     )
-                )
-        else:
-            flattened_dict[new_key] = value
+                    flattened_dict.update(subdict)
+                else:
+                    if item is None and remove_none:
+                        continue
+                    flattened_dict[item_key] = item
+            continue
+
+        flattened_dict[new_key] = value
 
     return flattened_dict
 
