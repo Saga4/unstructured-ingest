@@ -85,19 +85,15 @@ class SyncBlock(BlockBase):
 
         Determine if it's a duplicate (has 'synced_from') or original (has 'children').
         """
-        if data.get("synced_from") is not None:
-            # It's a duplicate block containing a reference
+        sf = data.get("synced_from")
+        if sf is not None:
             return DuplicateSyncedBlock.from_dict(data)
-        elif "children" in data:
-            # It's an original block containing children
-            return OriginalSyncedBlock.from_dict(data)
-        else:
-            # Handle cases where neither 'synced_from' nor 'children' are present.
-            # Notion API might return this for an empty original synced block.
-            # Let's treat it as an empty OriginalSyncedBlock.
-            # If this assumption is wrong, errors might occur later.
-            # Consider logging a warning here if strictness is needed.
-            return OriginalSyncedBlock(children=[])
+        # Fast path: avoid double lookup in the dict and call children constructor only when needed.
+        children = data.get("children")
+        if children is not None:
+            return OriginalSyncedBlock(children=children)
+        # As documented, treat no children and no synced_from as empty OriginalSyncedBlock
+        return OriginalSyncedBlock(children=[])
 
     def get_html(self) -> Optional[HtmlTag]:
         """Get HTML representation of the synced block.
