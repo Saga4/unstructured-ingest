@@ -12,7 +12,7 @@ class DatabaseParent(FromJSONMixin):
 
     @classmethod
     def from_dict(cls, data: dict):
-        return cls(database_id=data["database_id"])
+        return cls(data["database_id"])
 
 
 # https://developers.notion.com/reference/parent-object#page-parent
