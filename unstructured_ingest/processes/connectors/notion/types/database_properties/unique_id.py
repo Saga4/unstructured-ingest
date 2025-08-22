@@ -31,7 +31,10 @@ class UniqueIDCellData(FromJSONMixin):
 
     @classmethod
     def from_dict(cls, data: dict):
-        return cls(**data)
+        try:
+            return cls(data["prefix"], data["number"])
+        except KeyError:
+            return cls(**data)
 
 
 @dataclass
