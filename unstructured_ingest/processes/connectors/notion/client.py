@@ -116,7 +116,6 @@ class DatabasesEndpoint(NotionDatabasesEndpoint):
         )  # type: ignore
         return Database.from_dict(data=resp)
 
-    @requires_dependencies(["httpx"], extras="notion")
     def retrieve_status(self, database_id: str, **kwargs) -> int:
         import httpx
 
