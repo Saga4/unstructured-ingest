@@ -35,7 +35,7 @@ from unstructured_ingest.utils.dep_check import requires_dependencies
 CONNECTOR_TYPE = "s3"
 
 # https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-keys.html#object-key-guidelines-avoid-characters  # noqa
-CHARACTERS_TO_AVOID = ["\\", "{", "^", "}", "%", "`", "]", '"', ">", "[", "~", "<", "#", "|"]
+CHARACTERS_TO_AVOID = set(["\\", "{", "^", "}", "%", "`", "]", '"', ">", "[", "~", "<", "#", "|"])
 
 if TYPE_CHECKING:
     from s3fs import S3FileSystem
