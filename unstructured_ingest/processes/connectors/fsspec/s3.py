@@ -165,9 +165,7 @@ class S3Indexer(FsspecIndexer):
         return self.connection_config.wrap_error(e=e)
 
     def get_path(self, file_info: dict) -> str:
-        # Use local variable for key lookup for marginal speedup
-        key = file_info["Key"]
-        return key
+        return file_info["Key"]
 
     def get_metadata(self, file_info: dict) -> FileDataSourceMetadata:
         path = file_info["Key"]
