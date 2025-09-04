@@ -306,8 +306,6 @@ class ConnectorLoggingMixin:
 
     def log_debug(self, message: str, context: Optional[Dict[str, Any]] = None, **kwargs):
         """Log a debug message with optional context and sanitization."""
-        if not logger.isEnabledFor(10):  # logging.DEBUG == 10
-            return
         logger.debug(message)
         self._log_context("Debug", context, **kwargs)
 
