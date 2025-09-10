@@ -20,7 +20,7 @@ def create_partition_request(filename: Path, parameters_dict: dict) -> "Partitio
 
     Returns: A PartitionRequest containing the file and all valid params
     """
-    time.sleep(1)
+    time.sleep(1.1)
     from unstructured_client.models.operations import PartitionRequest
     from unstructured_client.models.shared import Files, PartitionParameters
 
