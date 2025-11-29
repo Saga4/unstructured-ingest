@@ -33,7 +33,9 @@ class StatusGroup(FromJSONMixin):
 
     @classmethod
     def from_dict(cls, data: dict):
-        return cls(**data)
+        # Avoid unnecessary dictionary copying or wrapping.
+        # Directly call cls with unpacked data.
+        return cls.__new__(cls, **data)
 
 
 @dataclass
@@ -43,9 +45,14 @@ class StatusProp(FromJSONMixin):
 
     @classmethod
     def from_dict(cls, data: dict):
+        options_data = data.get("options", [])
+        groups_data = data.get("groups", [])
+        option_from_dict = StatusOption.from_dict
+        group_from_dict = StatusGroup.from_dict
+
         return cls(
-            options=[StatusOption.from_dict(o) for o in data.get("options", [])],
-            groups=[StatusGroup.from_dict(g) for g in data.get("groups", [])],
+            options=[option_from_dict(o) for o in options_data],
+            groups=[group_from_dict(g) for g in groups_data],
         )
 
 
